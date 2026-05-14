@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useId } from "react"
+import { useMemo, useId, useSyncExternalStore } from "react"
 import { Bar, Doughnut } from "react-chartjs-2"
 import {
   Chart as ChartJS,
@@ -41,6 +41,19 @@ import {
 } from "@/components/mock-analytics"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend)
+
+/** Narrow viewport (max-width 639px): chart layout tuned for phones; SSR uses desktop layout. */
+function useIsNarrowScreen() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia("(max-width: 639px)")
+      mq.addEventListener("change", onChange)
+      return () => mq.removeEventListener("change", onChange)
+    },
+    () => window.matchMedia("(max-width: 639px)").matches,
+    () => false
+  )
+}
 
 const tnd = (n) =>
   `TND ${new Intl.NumberFormat("en-US", {
@@ -152,6 +165,7 @@ function MethodRow({ m }) {
 
 export function TransactionAnalyticsDashboard() {
   const chartId = useId()
+  const isNarrow = useIsNarrowScreen()
   const net = MOCK_SUMMARY.deposits.totalAmount - MOCK_SUMMARY.withdrawals.totalAmount
 
   const barData = useMemo(
@@ -179,14 +193,78 @@ export function TransactionAnalyticsDashboard() {
     []
   )
 
-  const barOptions = useMemo(
-    () => ({
+  const barOptions = useMemo(() => {
+    const tickColor = "#64748b"
+    const gridColor = "rgba(148, 163, 184, 0.15)"
+    const fmtY = (v) => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : v)
+
+    if (isNarrow) {
+      return {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "nearest", intersect: true },
+        datasets: {
+          bar: {
+            categoryPercentage: 0.78,
+            barPercentage: 0.9,
+            maxBarThickness: 22,
+          },
+        },
+        plugins: {
+          legend: {
+            position: "bottom",
+            align: "center",
+            labels: {
+              usePointStyle: true,
+              pointStyle: "circle",
+              boxWidth: 6,
+              boxHeight: 6,
+              padding: 12,
+              font: { size: 10 },
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${tnd(ctx.parsed.x)}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            stacked: false,
+            grid: { color: gridColor },
+            ticks: {
+              color: tickColor,
+              font: { size: 9 },
+              maxTicksLimit: 6,
+              callback: (v) => fmtY(v),
+            },
+          },
+          y: {
+            stacked: false,
+            grid: { display: false },
+            ticks: {
+              color: tickColor,
+              font: { size: 10 },
+              autoSkip: false,
+            },
+          },
+        },
+      }
+    }
+
+    return {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: { mode: "nearest", intersect: false },
+      datasets: {
+        bar: { categoryPercentage: 0.72, barPercentage: 0.85 },
+      },
       plugins: {
         legend: {
           position: "top",
-          labels: { usePointStyle: true, boxWidth: 8 },
+          labels: { usePointStyle: true, boxWidth: 8, padding: 12, font: { size: 11 } },
         },
         tooltip: {
           callbacks: {
@@ -197,20 +275,18 @@ export function TransactionAnalyticsDashboard() {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: "#64748b", font: { size: 11 } },
+          ticks: { color: tickColor, font: { size: 11 }, maxRotation: 0 },
         },
         y: {
-          grid: { color: "rgba(148, 163, 184, 0.15)" },
+          grid: { color: gridColor },
           ticks: {
-            color: "#64748b",
-            callback: (v) =>
-              v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : v,
+            color: tickColor,
+            callback: (v) => fmtY(v),
           },
         },
       },
-    }),
-    []
-  )
+    }
+  }, [isNarrow])
 
   const doughnutData = useMemo(
     () => ({
@@ -231,11 +307,21 @@ export function TransactionAnalyticsDashboard() {
     () => ({
       responsive: true,
       maintainAspectRatio: false,
-      cutout: "68%",
+      cutout: isNarrow ? "56%" : "68%",
+      layout: {
+        padding: isNarrow ? { top: 4, bottom: 4, left: 4, right: 4 } : { top: 8, bottom: 8, left: 8, right: 8 },
+      },
       plugins: {
         legend: {
           position: "bottom",
-          labels: { usePointStyle: true, boxWidth: 8, padding: 16 },
+          align: "center",
+          labels: {
+            usePointStyle: true,
+            pointStyle: "circle",
+            boxWidth: isNarrow ? 6 : 8,
+            padding: isNarrow ? 10 : 16,
+            font: { size: isNarrow ? 10 : 12 },
+          },
         },
         tooltip: {
           callbacks: {
@@ -244,7 +330,7 @@ export function TransactionAnalyticsDashboard() {
         },
       },
     }),
-    []
+    [isNarrow]
   )
 
   return (
@@ -335,39 +421,61 @@ export function TransactionAnalyticsDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="border-slate-200/90 shadow-lg dark:border-slate-800 lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <BarChart3 className="h-5 w-5 text-slate-500" aria-hidden />
+              <BarChart3 className="h-5 w-5 shrink-0 text-slate-500" aria-hidden />
               In vs out
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Share of total amount by request type.
             </p>
           </CardHeader>
-          <CardContent>
-            <div className="mx-auto h-[220px] max-w-xs sm:h-[260px]" id={`${chartId}-donut`}>
+          <CardContent className="px-2 pb-4 pt-0 sm:px-6 sm:pb-6">
+            <div
+              className="relative mx-auto w-full max-w-full sm:max-w-xs"
+              id={`${chartId}-donut`}
+            >
               <p className="sr-only">
                 Deposits total {tnd(MOCK_SUMMARY.deposits.totalAmount)}, withdrawals total{" "}
                 {tnd(MOCK_SUMMARY.withdrawals.totalAmount)}.
               </p>
-              <Doughnut data={doughnutData} options={doughnutOptions} aria-hidden />
+              <div className="h-[200px] w-full min-h-[200px] sm:h-[240px] sm:min-h-[240px] lg:h-[260px] lg:min-h-[260px]">
+                <Doughnut key={`donut-${isNarrow}`} data={doughnutData} options={doughnutOptions} aria-hidden />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200/90 shadow-lg dark:border-slate-800 lg:col-span-3">
-          <CardHeader>
+        <Card className="min-w-0 border-slate-200/90 shadow-lg dark:border-slate-800 lg:col-span-3">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <CreditCard className="h-5 w-5 text-slate-500" aria-hidden />
+              <CreditCard className="h-5 w-5 shrink-0 text-slate-500" aria-hidden />
               Volume by method
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Grouped bars: deposit and withdrawal totals per rail.
+              {isNarrow
+                ? "Horizontal bars: deposit vs withdrawal for each payment method."
+                : "Grouped bars: deposit and withdrawal totals per rail."}
             </p>
           </CardHeader>
-          <CardContent>
-            <div className="h-[280px] w-full min-w-0">
-              <Bar data={barData} options={barOptions} aria-hidden />
+          <CardContent className="px-0 pb-4 pt-0 sm:px-6 sm:pb-6">
+            <div
+              className={cn(
+                "w-full min-w-0 px-2 sm:px-0",
+                !isNarrow &&
+                  "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] sm:overflow-x-visible"
+              )}
+            >
+              <div
+                className={cn(
+                  "w-full min-w-0",
+                  isNarrow
+                    ? "h-[min(52vh,320px)] min-h-[260px] max-h-[360px]"
+                    : "h-[280px] min-h-[260px] min-w-[min(100%,520px)] lg:min-w-0"
+                )}
+              >
+                <Bar key={`bar-${isNarrow}`} data={barData} options={barOptions} aria-hidden />
+              </div>
             </div>
             <p className="sr-only">
               Bar chart comparing deposit and withdrawal totals for D17, Flouci, credit card, IZI,
