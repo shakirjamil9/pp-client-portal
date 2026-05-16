@@ -405,11 +405,11 @@ export function TransactionAnalyticsDashboard() {
             Transaction analytics
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Payments linked to your account (
+            Payments for{" "}
             <code className="rounded bg-slate-200/80 px-1 py-0.5 text-xs dark:bg-slate-800">
-              {portalUser?.userId}
-            </code>
-            ). Includes approved and rejected payments only (not pending or flagged).
+              {portalUser?.domain}
+            </code>{" "}
+            (from your return URL domain). Approved and rejected only—not pending or flagged.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -656,8 +656,7 @@ export function TransactionAnalyticsDashboard() {
       )}
 
       <p className="text-center text-xs text-slate-500 dark:text-slate-500">
-        Signed in as <span className="font-mono">{portalUser?.userId}</span> under client{" "}
-        <span className="font-mono">{portalUser?.clientId}</span>
+        Signed in as <span className="font-mono">{portalUser?.domain}</span>
       </p>
     </div>
   )

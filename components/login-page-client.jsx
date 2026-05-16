@@ -13,8 +13,7 @@ import { usePortalAuth } from "@/components/providers/portal-auth-provider"
 export function LoginPageClient() {
   const router = useRouter()
   const { user, initializing, login } = usePortalAuth()
-  const [clientId, setClientId] = useState("")
-  const [userId, setUserId] = useState("")
+  const [domain, setDomain] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -30,7 +29,7 @@ export function LoginPageClient() {
     setError("")
     setSubmitting(true)
     try {
-      await login({ clientId: clientId.trim(), userId: userId.trim(), password })
+      await login({ domain: domain.trim(), password })
       router.replace("/")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed")
@@ -82,8 +81,8 @@ export function LoginPageClient() {
             <CardHeader className="space-y-1 pb-4 pt-6 sm:pt-8">
               <CardTitle className="text-2xl font-bold tracking-tight sm:text-3xl">Sign in</CardTitle>
               <CardDescription className="text-base leading-relaxed text-slate-600 dark:text-slate-400">
-                Your portal account is created automatically when your merchant processes a payment for your user ID.
-                Sign in with the password they gave you.
+                Your portal account is tied to your site domain (from payment return URLs). Sign in with the domain and
+                password your merchant assigned.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-5 pb-8 sm:pb-10">
@@ -97,33 +96,17 @@ export function LoginPageClient() {
                   </p>
                 ) : null}
                 <div className="space-y-2">
-                  <Label htmlFor="portal-client-id" className="text-base sm:text-sm">
-                    Client ID
+                  <Label htmlFor="portal-domain" className="text-base sm:text-sm">
+                    Domain
                   </Label>
                   <Input
-                    id="portal-client-id"
-                    name="clientId"
+                    id="portal-domain"
+                    name="domain"
                     autoComplete="organization"
-                    inputMode="text"
-                    placeholder="Your merchant / client ID"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    required
-                    className="h-12 min-h-[48px] touch-manipulation bg-slate-50 text-base sm:h-11 sm:min-h-0 sm:text-sm dark:bg-slate-900/60"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="portal-user-id" className="text-base sm:text-sm">
-                    User ID
-                  </Label>
-                  <Input
-                    id="portal-user-id"
-                    name="userId"
-                    autoComplete="username"
-                    inputMode="text"
-                    placeholder="Your end-user ID"
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
+                    inputMode="url"
+                    placeholder="example.com"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
                     required
                     className="h-12 min-h-[48px] touch-manipulation bg-slate-50 text-base sm:h-11 sm:min-h-0 sm:text-sm dark:bg-slate-900/60"
                   />

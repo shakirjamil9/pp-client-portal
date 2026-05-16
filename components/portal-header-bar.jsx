@@ -14,10 +14,10 @@ export function PortalHeaderBar() {
       <div className="flex max-w-[min(100%,20rem)] shrink-0 items-center gap-2 sm:gap-3">
         <span
           className="hidden truncate text-xs font-medium text-slate-600 dark:text-slate-300 lg:inline xl:max-w-[12rem]"
-          title={`${user.clientId} · ${user.userId}`}
+          title={user.domain}
         >
           <span className="text-slate-400">User</span>{" "}
-          <span className="font-mono text-slate-800 dark:text-slate-100">{user.userId}</span>
+          <span className="font-mono text-slate-800 dark:text-slate-100">{user.domain}</span>
         </span>
         <Button
           type="button"

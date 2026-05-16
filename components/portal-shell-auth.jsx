@@ -11,8 +11,8 @@ export function PortalSidebarAuthFooter() {
   if (user) {
     return (
       <div className="border-t border-white/10 p-4">
-        <p className="mb-2 truncate px-1 text-xs text-slate-400" title={`${user.clientId} / ${user.userId}`}>
-          <span className="font-mono text-slate-300">{user.userId}</span>
+        <p className="mb-2 truncate px-1 text-xs text-slate-400" title={user.domain}>
+          <span className="font-mono text-slate-300">{user.domain}</span>
         </p>
         <Button
           type="button"
