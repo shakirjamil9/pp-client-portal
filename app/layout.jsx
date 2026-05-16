@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { PortalAuthProvider } from "@/components/providers/portal-auth-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,7 +21,7 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          {children}
+          <PortalAuthProvider>{children}</PortalAuthProvider>
         </ThemeProvider>
       </body>
     </html>

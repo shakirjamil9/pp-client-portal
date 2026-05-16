@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { usePortalAuth } from "@/components/providers/portal-auth-provider"
 import {
   MOCK_USER,
   MOCK_SUMMARY,
@@ -166,6 +167,7 @@ function MethodRow({ m }) {
 export function TransactionAnalyticsDashboard() {
   const chartId = useId()
   const isNarrow = useIsNarrowScreen()
+  const { user: portalUser } = usePortalAuth()
   const net = MOCK_SUMMARY.deposits.totalAmount - MOCK_SUMMARY.withdrawals.totalAmount
 
   const barData = useMemo(
@@ -549,8 +551,9 @@ export function TransactionAnalyticsDashboard() {
       </Card>
 
       <p className="text-center text-xs text-slate-500 dark:text-slate-500">
-        Signed-in context will use <span className="font-mono">{MOCK_USER.userId}</span> under client{" "}
-        <span className="font-mono">{MOCK_USER.clientId}</span> · {MOCK_USER.displayName}
+        Signed in as <span className="font-mono">{portalUser?.userId ?? MOCK_USER.userId}</span> under client{" "}
+        <span className="font-mono">{portalUser?.clientId ?? MOCK_USER.clientId}</span>
+        {portalUser ? null : <> · {MOCK_USER.displayName} (demo copy)</>}
       </p>
     </div>
   )

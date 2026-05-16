@@ -4,8 +4,18 @@ Standalone Next.js app for the **client transaction analytics** dashboard (mock 
 
 ## Routes
 
-- `/` — Analytics dashboard  
-- `/login` — Sign-in shell (placeholders until auth is implemented)
+- `/` — Analytics dashboard (requires sign-in; JWT in `localStorage`)  
+- `/login` — Sign in (`clientId`, `userId`, `password`)
+
+## Backend / env
+
+Create `.env.local` from `.env.example`:
+
+- **`NEXT_PUBLIC_API_URL`** — Base URL of **pp-be** (e.g. `http://localhost:8080`). Uses `POST /api/client-portal/auth/login` and `GET /api/client-portal/auth/me`.
+
+## How portal accounts work
+
+Portal users are **not** self-registered in this app. **pp-be** creates a `ClientPortalUser` row (status `pending`, no password) whenever a **`TransactionRequest`** is saved with that `clientId` and `userId`. You then **set a bcrypt password** on that document (e.g. admin/support process). Until a password exists, login returns a clear error. For existing Mongo data, run **`node scripts/backfill-client-portal-users.js`** once from **pp-be** (see that repo).
 
 ## Scripts
 
