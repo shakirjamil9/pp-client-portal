@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useId, useSyncExternalStore } from "react"
+import { useMemo, useId, useSyncExternalStore, useState, useEffect, useCallback } from "react"
 import { Bar, Doughnut } from "react-chartjs-2"
 import {
   Chart as ChartJS,
@@ -19,6 +19,8 @@ import {
   LayoutDashboard,
   Layers,
   TrendingUp,
+  RefreshCcw,
+  AlertCircle,
 } from "lucide-react"
 import { format } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,14 +36,17 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { usePortalAuth } from "@/components/providers/portal-auth-provider"
-import {
-  MOCK_USER,
-  MOCK_SUMMARY,
-  MOCK_METHOD_STATS,
-  MOCK_RECENT_TRANSACTIONS,
-} from "@/components/mock-analytics"
+import { getStoredToken, portalAnalytics } from "@/lib/portal-api"
+import { withMethodColors } from "@/lib/analytics-colors"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend)
+
+const PERIOD_OPTIONS = [
+  { value: "7", label: "7 days" },
+  { value: "30", label: "30 days" },
+  { value: "90", label: "90 days" },
+  { value: "all", label: "All time" },
+]
 
 /** Narrow viewport (max-width 639px): chart layout tuned for phones; SSR uses desktop layout. */
 function useIsNarrowScreen() {
@@ -60,7 +65,7 @@ const tnd = (n) =>
   `TND ${new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(n)}`
+  }).format(n ?? 0)}`
 
 function KpiTile({
   title,
@@ -167,32 +172,78 @@ function MethodRow({ m }) {
 export function TransactionAnalyticsDashboard() {
   const chartId = useId()
   const isNarrow = useIsNarrowScreen()
-  const { user: portalUser } = usePortalAuth()
-  const net = MOCK_SUMMARY.deposits.totalAmount - MOCK_SUMMARY.withdrawals.totalAmount
+  const { user: portalUser, initializing } = usePortalAuth()
+
+  const [days, setDays] = useState("30")
+  const [analytics, setAnalytics] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const loadAnalytics = useCallback(async () => {
+    const token = getStoredToken()
+    if (!token) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await portalAnalytics({
+        days,
+        recentLimit: 20,
+        token,
+      })
+      setAnalytics(res.data)
+    } catch (err) {
+      setError(err.message || "Failed to load analytics")
+      setAnalytics(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [days])
+
+  useEffect(() => {
+    if (initializing) return
+    if (!getStoredToken()) {
+      setLoading(false)
+      return
+    }
+    loadAnalytics()
+  }, [initializing, loadAnalytics])
+
+  const summary = analytics?.summary
+  const methodStats = useMemo(
+    () => withMethodColors(analytics?.methodStats ?? []),
+    [analytics?.methodStats]
+  )
+  const recentTransactions = analytics?.recentTransactions ?? []
+  const activeRails =
+    analytics?.activeRails ?? methodStats.filter((m) => m.key !== "unknown").length
+  const periodLabel =
+    summary?.periodLabel ?? (days === "all" ? "All time" : `Last ${days} days`)
+  const net =
+    (summary?.deposits?.totalAmount ?? 0) - (summary?.withdrawals?.totalAmount ?? 0)
 
   const barData = useMemo(
     () => ({
-      labels: MOCK_METHOD_STATS.map((x) => x.shortLabel),
+      labels: methodStats.map((x) => x.shortLabel),
       datasets: [
         {
           label: "Deposits",
-          data: MOCK_METHOD_STATS.map((x) => x.deposits.total),
-          backgroundColor: MOCK_METHOD_STATS.map((x) => `${x.color}cc`),
-          borderColor: MOCK_METHOD_STATS.map((x) => x.color),
+          data: methodStats.map((x) => x.deposits.total),
+          backgroundColor: methodStats.map((x) => `${x.color}cc`),
+          borderColor: methodStats.map((x) => x.color),
           borderWidth: 1,
           borderRadius: 6,
         },
         {
           label: "Withdrawals",
-          data: MOCK_METHOD_STATS.map((x) => x.withdrawals.total),
-          backgroundColor: MOCK_METHOD_STATS.map((x) => `${x.color}40`),
-          borderColor: MOCK_METHOD_STATS.map((x) => `${x.color}99`),
+          data: methodStats.map((x) => x.withdrawals.total),
+          backgroundColor: methodStats.map((x) => `${x.color}40`),
+          borderColor: methodStats.map((x) => `${x.color}99`),
           borderWidth: 1,
           borderRadius: 6,
         },
       ],
     }),
-    []
+    [methodStats]
   )
 
   const barOptions = useMemo(() => {
@@ -295,14 +346,17 @@ export function TransactionAnalyticsDashboard() {
       labels: ["Deposits", "Withdrawals"],
       datasets: [
         {
-          data: [MOCK_SUMMARY.deposits.totalAmount, MOCK_SUMMARY.withdrawals.totalAmount],
+          data: [
+            summary?.deposits?.totalAmount ?? 0,
+            summary?.withdrawals?.totalAmount ?? 0,
+          ],
           backgroundColor: ["#059669", "#e11d48"],
           borderWidth: 0,
           hoverOffset: 6,
         },
       ],
     }),
-    []
+    [summary]
   )
 
   const doughnutOptions = useMemo(
@@ -335,6 +389,14 @@ export function TransactionAnalyticsDashboard() {
     [isNarrow]
   )
 
+  if (initializing) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#FF6D00] border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -343,43 +405,68 @@ export function TransactionAnalyticsDashboard() {
             Transaction analytics
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Deposits and withdrawals by volume and count, broken down by payment rail. Live data
-            will connect to your{" "}
+            Payments linked to your account (
             <code className="rounded bg-slate-200/80 px-1 py-0.5 text-xs dark:bg-slate-800">
-              userId
-            </code>{" "}
-            scope when the API is ready.
+              {portalUser?.userId}
+            </code>
+            ). Only transactions connected to a payment request are included.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="outline"
-            className="border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200"
+          <label className="sr-only" htmlFor="analytics-period">
+            Time period
+          </label>
+          <select
+            id="analytics-period"
+            value={days}
+            onChange={(e) => setDays(e.target.value)}
+            disabled={loading}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF9900]"
           >
-            Preview · mock data
-          </Badge>
-          <Button type="button" variant="outline" size="sm" className="pointer-events-none opacity-70">
-            Export report
+            {PERIOD_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <Button type="button" variant="outline" size="sm" onClick={loadAnalytics} disabled={loading}>
+            <RefreshCcw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
+            Refresh
           </Button>
         </div>
       </div>
 
+      {error ? (
+        <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40">
+          <CardContent className="flex items-center gap-3 p-4 text-red-800 dark:text-red-200">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <p className="text-sm">{error}</p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {loading && !analytics ? (
+        <div className="flex min-h-[280px] items-center justify-center text-muted-foreground">
+          Loading analytics…
+        </div>
+      ) : (
+        <>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiTile
           title="Deposits"
-          count={MOCK_SUMMARY.deposits.count}
-          amount={MOCK_SUMMARY.deposits.totalAmount}
+          count={summary?.deposits?.count ?? 0}
+          amount={summary?.deposits?.totalAmount ?? 0}
           icon={ArrowDownLeft}
           variant="in"
-          description={MOCK_SUMMARY.periodLabel}
+          description={periodLabel}
         />
         <KpiTile
           title="Withdrawals"
-          count={MOCK_SUMMARY.withdrawals.count}
-          amount={MOCK_SUMMARY.withdrawals.totalAmount}
+          count={summary?.withdrawals?.count ?? 0}
+          amount={summary?.withdrawals?.totalAmount ?? 0}
           icon={ArrowUpRight}
           variant="out"
-          description={MOCK_SUMMARY.periodLabel}
+          description={periodLabel}
         />
         <Card className="border-slate-200/90 bg-white/90 shadow-md backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -412,10 +499,10 @@ export function TransactionAnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold tabular-nums text-slate-900 dark:text-white sm:text-4xl">
-              {MOCK_METHOD_STATS.length}
+              {activeRails}
             </p>
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              D17, Flouci, card, IZI, mandate — same flags as your transaction model.
+              Methods with activity in this period.
             </p>
           </CardContent>
         </Card>
@@ -438,11 +525,11 @@ export function TransactionAnalyticsDashboard() {
               id={`${chartId}-donut`}
             >
               <p className="sr-only">
-                Deposits total {tnd(MOCK_SUMMARY.deposits.totalAmount)}, withdrawals total{" "}
-                {tnd(MOCK_SUMMARY.withdrawals.totalAmount)}.
+                Deposits total {tnd(summary?.deposits?.totalAmount ?? 0)}, withdrawals total{" "}
+                {tnd(summary?.withdrawals?.totalAmount ?? 0)}.
               </p>
               <div className="h-[200px] w-full min-h-[200px] sm:h-[240px] sm:min-h-[240px] lg:h-[260px] lg:min-h-[260px]">
-                <Doughnut key={`donut-${isNarrow}`} data={doughnutData} options={doughnutOptions} aria-hidden />
+                <Doughnut key={`donut-${isNarrow}-${days}`} data={doughnutData} options={doughnutOptions} aria-hidden />
               </div>
             </div>
           </CardContent>
@@ -476,7 +563,7 @@ export function TransactionAnalyticsDashboard() {
                     : "h-[280px] min-h-[260px] min-w-[min(100%,520px)] lg:min-w-0"
                 )}
               >
-                <Bar key={`bar-${isNarrow}`} data={barData} options={barOptions} aria-hidden />
+                <Bar key={`bar-${isNarrow}-${days}`} data={barData} options={barOptions} aria-hidden />
               </div>
             </div>
             <p className="sr-only">
@@ -492,33 +579,43 @@ export function TransactionAnalyticsDashboard() {
           <LayoutDashboard className="h-5 w-5 text-slate-500" aria-hidden />
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Method breakdown</h2>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {MOCK_METHOD_STATS.map((m) => (
-            <MethodRow key={m.key} m={m} />
-          ))}
-        </div>
+        {methodStats.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {methodStats.map((m) => (
+              <MethodRow key={m.key} m={m} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No transactions in this period.</p>
+        )}
       </div>
 
       <Card className="border-slate-200/90 shadow-lg dark:border-slate-800">
         <CardHeader>
           <CardTitle className="text-lg">Recent activity</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Latest rows (design only). Columns map to transaction id, type, amount, method, and time.
+            Latest processed payments linked to your client and user IDs.
           </p>
         </CardHeader>
         <CardContent className="px-0 sm:px-6">
+          {recentTransactions.length === 0 ? (
+            <p className="px-6 pb-6 text-sm text-muted-foreground">
+              No recent transactions in this period.
+            </p>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-[140px]">Transaction</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Method</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="hidden text-right sm:table-cell">When</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_RECENT_TRANSACTIONS.map((row) => (
+              {recentTransactions.map((row) => (
                 <TableRow key={row.transactionId}>
                   <TableCell className="font-mono text-xs text-slate-600 dark:text-slate-400">
                     {row.transactionId}
@@ -536,6 +633,11 @@ export function TransactionAnalyticsDashboard() {
                       {row.requestType}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-medium capitalize">
+                      {(row.status || "pending").replace("_", " ")}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-slate-700 dark:text-slate-300">{row.method}</TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
                     {tnd(row.amount)}
@@ -547,13 +649,15 @@ export function TransactionAnalyticsDashboard() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
+        </>
+      )}
 
       <p className="text-center text-xs text-slate-500 dark:text-slate-500">
-        Signed in as <span className="font-mono">{portalUser?.userId ?? MOCK_USER.userId}</span> under client{" "}
-        <span className="font-mono">{portalUser?.clientId ?? MOCK_USER.clientId}</span>
-        {portalUser ? null : <> · {MOCK_USER.displayName} (demo copy)</>}
+        Signed in as <span className="font-mono">{portalUser?.userId}</span> under client{" "}
+        <span className="font-mono">{portalUser?.clientId}</span>
       </p>
     </div>
   )
