@@ -42,6 +42,7 @@ import { withMethodColors } from "@/lib/analytics-colors"
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend)
 
 const PERIOD_OPTIONS = [
+  { value: "today", label: "Today" },
   { value: "7", label: "7 days" },
   { value: "30", label: "30 days" },
   { value: "90", label: "90 days" },
@@ -217,7 +218,8 @@ export function TransactionAnalyticsDashboard() {
   const activeRails =
     analytics?.activeRails ?? methodStats.filter((m) => m.key !== "unknown").length
   const periodLabel =
-    summary?.periodLabel ?? (days === "all" ? "All time" : `Last ${days} days`)
+    summary?.periodLabel ??
+    (days === "all" ? "All time" : days === "today" ? "Today" : `Last ${days} days`)
   const net =
     (summary?.deposits?.totalAmount ?? 0) - (summary?.withdrawals?.totalAmount ?? 0)
 
