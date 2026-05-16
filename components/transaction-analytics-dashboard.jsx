@@ -409,7 +409,7 @@ export function TransactionAnalyticsDashboard() {
             <code className="rounded bg-slate-200/80 px-1 py-0.5 text-xs dark:bg-slate-800">
               {portalUser?.userId}
             </code>
-            ). Only transactions connected to a payment request are included.
+            ). Includes approved and rejected payments only (not pending or flagged).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
