@@ -13,7 +13,7 @@ import { usePortalAuth } from "@/components/providers/portal-auth-provider"
 export function LoginPageClient() {
   const router = useRouter()
   const { user, initializing, login } = usePortalAuth()
-  const [domain, setDomain] = useState("")
+  const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -29,7 +29,7 @@ export function LoginPageClient() {
     setError("")
     setSubmitting(true)
     try {
-      await login({ domain: domain.trim(), password })
+      await login({ domain: identifier.trim(), password })
       router.replace("/")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed")
@@ -81,8 +81,8 @@ export function LoginPageClient() {
             <CardHeader className="space-y-1 pb-4 pt-6 sm:pt-8">
               <CardTitle className="text-2xl font-bold tracking-tight sm:text-3xl">Sign in</CardTitle>
               <CardDescription className="text-base leading-relaxed text-slate-600 dark:text-slate-400">
-                Your portal account is tied to your site domain (from payment return URLs). Sign in with the domain and
-                password your merchant assigned.
+                Sign in with your merchant ID (e.g. TB-463194) or site URL (e.g. treebet365.com) and the password your
+                merchant assigned.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-5 pb-8 sm:pb-10">
@@ -96,17 +96,16 @@ export function LoginPageClient() {
                   </p>
                 ) : null}
                 <div className="space-y-2">
-                  <Label htmlFor="portal-domain" className="text-base sm:text-sm">
-                    Domain
+                  <Label htmlFor="portal-identifier" className="text-base sm:text-sm">
+                    Merchant ID or site URL
                   </Label>
                   <Input
-                    id="portal-domain"
-                    name="domain"
-                    autoComplete="organization"
-                    inputMode="url"
-                    placeholder="example.com"
-                    value={domain}
-                    onChange={(e) => setDomain(e.target.value)}
+                    id="portal-identifier"
+                    name="identifier"
+                    autoComplete="username"
+                    placeholder="TB-463194 or example.com"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     required
                     className="h-12 min-h-[48px] touch-manipulation bg-slate-50 text-base sm:h-11 sm:min-h-0 sm:text-sm dark:bg-slate-900/60"
                   />
