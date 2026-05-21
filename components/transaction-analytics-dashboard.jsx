@@ -69,7 +69,7 @@ const tnd = (n) =>
   }).format(n ?? 0)}`
 
 const STATUS_KPI_STYLES = {
-  "deposit-accepted": {
+  "deposit-approved": {
     card: "border-0 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-900 text-white shadow-lg shadow-emerald-950/25",
     glow: "#34d399",
     glowOpacity: 0.25,
@@ -90,7 +90,7 @@ const STATUS_KPI_STYLES = {
     iconWrap: "bg-emerald-50 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:ring-emerald-700/60",
     icon: "text-emerald-600 dark:text-emerald-400",
   },
-  "withdrawal-accepted": {
+  "withdrawal-approved": {
     card: "border-0 bg-gradient-to-br from-rose-950 via-rose-900 to-slate-900 text-white shadow-lg shadow-rose-950/25",
     glow: "#fb7185",
     glowOpacity: 0.25,
@@ -123,7 +123,7 @@ function StatusKpiTile({
   description,
 }) {
   const variantKey = `${flow}-${status}`
-  const s = STATUS_KPI_STYLES[variantKey] ?? STATUS_KPI_STYLES["deposit-accepted"]
+  const s = STATUS_KPI_STYLES[variantKey] ?? STATUS_KPI_STYLES["deposit-approved"]
 
   return (
     <Card
@@ -204,13 +204,13 @@ function MethodRow({ m }) {
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
         <span>
-          Deposits (accepted):{" "}
+          Deposits (approved):{" "}
           <strong className="text-emerald-700 dark:text-emerald-400">
             {m.deposits.count} · {tnd(m.deposits.total)}
           </strong>
         </span>
         <span>
-          Withdrawals (accepted):{" "}
+          Withdrawals (approved):{" "}
           <strong className="text-rose-700 dark:text-rose-400">
             {m.withdrawals.count} · {tnd(m.withdrawals.total)}
           </strong>
@@ -271,12 +271,12 @@ export function TransactionAnalyticsDashboard() {
     summary?.periodLabel ??
     (days === "all" ? "All time" : days === "today" ? "Today" : `Last ${days} days`)
 
-  const depositsAccepted = summary?.deposits?.approved ?? { count: 0, totalAmount: 0 }
+  const depositsApproved = summary?.deposits?.approved ?? { count: 0, totalAmount: 0 }
   const depositsRejected = summary?.deposits?.rejected ?? { count: 0, totalAmount: 0 }
-  const withdrawalsAccepted = summary?.withdrawals?.approved ?? { count: 0, totalAmount: 0 }
+  const withdrawalsApproved = summary?.withdrawals?.approved ?? { count: 0, totalAmount: 0 }
   const withdrawalsRejected = summary?.withdrawals?.rejected ?? { count: 0, totalAmount: 0 }
 
-  const net = depositsAccepted.totalAmount - withdrawalsAccepted.totalAmount
+  const net = depositsApproved.totalAmount - withdrawalsApproved.totalAmount
 
   const barData = useMemo(
     () => ({
@@ -403,14 +403,14 @@ export function TransactionAnalyticsDashboard() {
       labels: ["Deposits", "Withdrawals"],
       datasets: [
         {
-          data: [depositsAccepted.totalAmount, withdrawalsAccepted.totalAmount],
+          data: [depositsApproved.totalAmount, withdrawalsApproved.totalAmount],
           backgroundColor: ["#059669", "#e11d48"],
           borderWidth: 0,
           hoverOffset: 6,
         },
       ],
     }),
-    [depositsAccepted.totalAmount, withdrawalsAccepted.totalAmount]
+    [depositsApproved.totalAmount, withdrawalsApproved.totalAmount]
   )
 
   const doughnutOptions = useMemo(
@@ -463,7 +463,7 @@ export function TransactionAnalyticsDashboard() {
             <code className="rounded bg-slate-200/80 px-1 py-0.5 text-xs dark:bg-slate-800">
               {portalUser?.domain}
             </code>{" "}
-            (from your return URL domain). Accepted totals, net flow, and charts use amounts{" "}
+            (from your return URL domain). Approved totals, net flow, and charts use amounts{" "}
             <strong className="font-medium text-slate-700 dark:text-slate-300">
               after 1% platform fee
             </strong>{" "}
@@ -511,12 +511,12 @@ export function TransactionAnalyticsDashboard() {
         <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatusKpiTile
-          title="Deposits accepted"
-          count={depositsAccepted.count}
-          amount={depositsAccepted.totalAmount}
+          title="Deposits approved"
+          count={depositsApproved.count}
+          amount={depositsApproved.totalAmount}
           icon={ArrowDownLeft}
           flow="deposit"
-          status="accepted"
+          status="approved"
           description={periodLabel}
         />
         <StatusKpiTile
@@ -529,12 +529,12 @@ export function TransactionAnalyticsDashboard() {
           description={periodLabel}
         />
         <StatusKpiTile
-          title="Withdrawals accepted"
-          count={withdrawalsAccepted.count}
-          amount={withdrawalsAccepted.totalAmount}
+          title="Withdrawals approved"
+          count={withdrawalsApproved.count}
+          amount={withdrawalsApproved.totalAmount}
           icon={ArrowUpRight}
           flow="withdrawal"
-          status="accepted"
+          status="approved"
           description={periodLabel}
         />
         <StatusKpiTile
@@ -576,7 +576,7 @@ export function TransactionAnalyticsDashboard() {
               {tnd(net)}
             </p>
             <p className="mt-2 text-xs text-white/55">
-              Accepted deposits minus accepted withdrawals, net of 1% fee (
+              Approved deposits minus approved withdrawals (
               {periodLabel.toLowerCase()}).
             </p>
           </CardContent>
@@ -597,7 +597,7 @@ export function TransactionAnalyticsDashboard() {
           <CardContent className="relative pb-6">
             <p className="text-3xl font-bold tabular-nums text-white sm:text-4xl">{activeRails}</p>
             <p className="mt-2 text-xs text-white/70">
-              Methods with accepted activity in this period.
+              Methods with approved activity in this period.
             </p>
           </CardContent>
         </Card>
@@ -611,7 +611,7 @@ export function TransactionAnalyticsDashboard() {
               In vs out
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Share of accepted volume: deposits vs withdrawals.
+              Share of approved volume: deposits vs withdrawals.
             </p>
           </CardHeader>
           <CardContent className="px-2 pb-4 pt-0 sm:px-6 sm:pb-6">
@@ -620,8 +620,8 @@ export function TransactionAnalyticsDashboard() {
               id={`${chartId}-donut`}
             >
               <p className="sr-only">
-                Accepted deposits {tnd(depositsAccepted.totalAmount)}, accepted withdrawals{" "}
-                {tnd(withdrawalsAccepted.totalAmount)}.
+                Approved deposits {tnd(depositsApproved.totalAmount)}, approved withdrawals{" "}
+                {tnd(withdrawalsApproved.totalAmount)}.
               </p>
               <div className="h-[200px] w-full min-h-[200px] sm:h-[240px] sm:min-h-[240px] lg:h-[260px] lg:min-h-[260px]">
                 <Doughnut key={`donut-${isNarrow}-${days}`} data={doughnutData} options={doughnutOptions} aria-hidden />
@@ -639,7 +639,7 @@ export function TransactionAnalyticsDashboard() {
             <p className="text-sm text-muted-foreground">
               {isNarrow
                 ? "Horizontal bars: deposit vs withdrawal for each payment method."
-                : "Grouped bars: accepted deposit and withdrawal totals per rail."}
+                : "Grouped bars: approved deposit and withdrawal totals per rail."}
             </p>
           </CardHeader>
           <CardContent className="px-0 pb-4 pt-0 sm:px-6 sm:pb-6">
