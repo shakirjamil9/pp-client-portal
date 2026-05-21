@@ -458,17 +458,7 @@ export function TransactionAnalyticsDashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Transaction analytics
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Payments for{" "}
-            <code className="rounded bg-slate-200/80 px-1 py-0.5 text-xs dark:bg-slate-800">
-              {portalUser?.domain}
-            </code>{" "}
-            (from your return URL domain). Approved totals, net flow, and charts use amounts{" "}
-            <strong className="font-medium text-slate-700 dark:text-slate-300">
-              after 1% platform fee
-            </strong>{" "}
-            (99% of gross). Rejected totals show gross amounts.
-          </p>
+  
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="sr-only" htmlFor="analytics-period">
