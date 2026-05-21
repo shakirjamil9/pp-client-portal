@@ -68,51 +68,101 @@ const tnd = (n) =>
     maximumFractionDigits: 2,
   }).format(n ?? 0)}`
 
-function KpiTile({
+const STATUS_KPI_STYLES = {
+  "deposit-accepted": {
+    card: "border-0 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-900 text-white shadow-lg shadow-emerald-950/25",
+    glow: "#34d399",
+    glowOpacity: 0.25,
+    title: "text-white/70",
+    meta: "text-white/50",
+    amount: "text-white",
+    count: "text-white/90",
+    iconWrap: "bg-white/10 ring-white/10",
+    icon: "text-white/90",
+  },
+  "deposit-rejected": {
+    card: "border-2 border-emerald-500/80 bg-white/50 shadow-md backdrop-blur-sm dark:border-emerald-500/55 dark:bg-slate-900/30",
+    glow: null,
+    title: "text-emerald-800 dark:text-emerald-300",
+    meta: "text-emerald-700/75 dark:text-emerald-400/80",
+    amount: "text-emerald-950 dark:text-emerald-50",
+    count: "text-emerald-800 dark:text-emerald-200",
+    iconWrap: "bg-emerald-50 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:ring-emerald-700/60",
+    icon: "text-emerald-600 dark:text-emerald-400",
+  },
+  "withdrawal-accepted": {
+    card: "border-0 bg-gradient-to-br from-rose-950 via-rose-900 to-slate-900 text-white shadow-lg shadow-rose-950/25",
+    glow: "#fb7185",
+    glowOpacity: 0.25,
+    title: "text-white/70",
+    meta: "text-white/50",
+    amount: "text-white",
+    count: "text-white/90",
+    iconWrap: "bg-white/10 ring-white/10",
+    icon: "text-white/90",
+  },
+  "withdrawal-rejected": {
+    card: "border-2 border-rose-500/80 bg-white/50 shadow-md backdrop-blur-sm dark:border-rose-500/55 dark:bg-slate-900/30",
+    glow: null,
+    title: "text-rose-800 dark:text-rose-300",
+    meta: "text-rose-700/75 dark:text-rose-400/80",
+    amount: "text-rose-950 dark:text-rose-50",
+    count: "text-rose-800 dark:text-rose-200",
+    iconWrap: "bg-rose-50 ring-1 ring-rose-200 dark:bg-rose-950/50 dark:ring-rose-700/60",
+    icon: "text-rose-600 dark:text-rose-400",
+  },
+}
+
+function StatusKpiTile({
   title,
   count,
   amount,
   icon: Icon,
-  variant,
+  flow,
+  status,
   description,
 }) {
+  const variantKey = `${flow}-${status}`
+  const s = STATUS_KPI_STYLES[variantKey] ?? STATUS_KPI_STYLES["deposit-accepted"]
+
   return (
     <Card
       className={cn(
-        "relative overflow-hidden border-0 shadow-lg transition-shadow duration-200 hover:shadow-xl",
-        variant === "in"
-          ? "bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-900 text-white"
-          : "bg-gradient-to-br from-rose-950 via-rose-900 to-slate-900 text-white"
+        "relative overflow-hidden transition-shadow duration-200 hover:shadow-xl",
+        s.card
       )}
     >
-      <div
-        className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-20 blur-2xl"
-        aria-hidden
-        style={{
-          background: variant === "in" ? "#34d399" : "#fb7185",
-        }}
-      />
+      {s.glow ? (
+        <div
+          className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl"
+          aria-hidden
+          style={{
+            background: s.glow,
+            opacity: s.glowOpacity ?? 0.25,
+          }}
+        />
+      ) : null}
       <CardHeader className="relative flex flex-row items-start justify-between space-y-0 pb-2">
-        <div>
-          <CardTitle className="text-sm font-medium uppercase tracking-wider text-white/70">
+        <div className="min-w-0">
+          <CardTitle
+            className={cn("text-xs font-medium uppercase tracking-wider sm:text-sm", s.title)}
+          >
             {title}
           </CardTitle>
-          <p className="mt-1 text-xs text-white/50">{description}</p>
+          <p className={cn("mt-1 text-[11px]", s.meta)}>{description}</p>
         </div>
-        <div className="rounded-lg bg-white/10 p-2 ring-1 ring-white/10">
-          <Icon className="h-5 w-5 text-white/90" aria-hidden />
+        <div className={cn("shrink-0 rounded-lg p-2 ring-1", s.iconWrap)}>
+          <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", s.icon)} aria-hidden />
         </div>
       </CardHeader>
-      <CardContent className="relative space-y-4 pb-6">
-        <div>
-          <p className="text-3xl font-bold tracking-tight tabular-nums sm:text-4xl">
-            {tnd(amount)}
-          </p>
-          <p className="mt-1 text-sm text-white/60">
-            <span className="font-semibold text-white/90">{count.toLocaleString()}</span>{" "}
-            transactions
-          </p>
-        </div>
+      <CardContent className="relative pb-6 pt-0">
+        <p className={cn("text-2xl font-bold tabular-nums tracking-tight sm:text-3xl", s.amount)}>
+          {tnd(amount)}
+        </p>
+        <p className={cn("mt-1 text-sm", s.meta)}>
+          <span className={cn("font-semibold", s.count)}>{count.toLocaleString()}</span>{" "}
+          {count === 1 ? "transaction" : "transactions"}
+        </p>
       </CardContent>
     </Card>
   )
@@ -123,7 +173,7 @@ function MethodRow({ m }) {
   const depPct = totalVol > 0 ? (m.deposits.total / totalVol) * 100 : 0
 
   return (
-    <div className="group flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-white/60 p-4 shadow-sm backdrop-blur-sm transition-colors hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700">
+    <div className="group flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/80 to-slate-100/60 p-4 shadow-sm backdrop-blur-sm transition-colors hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:from-slate-900/80 dark:via-slate-900/60 dark:to-slate-800/40 dark:hover:border-slate-700">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <span
@@ -154,13 +204,13 @@ function MethodRow({ m }) {
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
         <span>
-          In:{" "}
+          Deposits (accepted):{" "}
           <strong className="text-emerald-700 dark:text-emerald-400">
             {m.deposits.count} · {tnd(m.deposits.total)}
           </strong>
         </span>
         <span>
-          Out:{" "}
+          Withdrawals (accepted):{" "}
           <strong className="text-rose-700 dark:text-rose-400">
             {m.withdrawals.count} · {tnd(m.withdrawals.total)}
           </strong>
@@ -220,8 +270,13 @@ export function TransactionAnalyticsDashboard() {
   const periodLabel =
     summary?.periodLabel ??
     (days === "all" ? "All time" : days === "today" ? "Today" : `Last ${days} days`)
-  const net =
-    (summary?.deposits?.totalAmount ?? 0) - (summary?.withdrawals?.totalAmount ?? 0)
+
+  const depositsAccepted = summary?.deposits?.approved ?? { count: 0, totalAmount: 0 }
+  const depositsRejected = summary?.deposits?.rejected ?? { count: 0, totalAmount: 0 }
+  const withdrawalsAccepted = summary?.withdrawals?.approved ?? { count: 0, totalAmount: 0 }
+  const withdrawalsRejected = summary?.withdrawals?.rejected ?? { count: 0, totalAmount: 0 }
+
+  const net = depositsAccepted.totalAmount - withdrawalsAccepted.totalAmount
 
   const barData = useMemo(
     () => ({
@@ -348,17 +403,14 @@ export function TransactionAnalyticsDashboard() {
       labels: ["Deposits", "Withdrawals"],
       datasets: [
         {
-          data: [
-            summary?.deposits?.totalAmount ?? 0,
-            summary?.withdrawals?.totalAmount ?? 0,
-          ],
+          data: [depositsAccepted.totalAmount, withdrawalsAccepted.totalAmount],
           backgroundColor: ["#059669", "#e11d48"],
           borderWidth: 0,
           hoverOffset: 6,
         },
       ],
     }),
-    [summary]
+    [depositsAccepted.totalAmount, withdrawalsAccepted.totalAmount]
   )
 
   const doughnutOptions = useMemo(
@@ -411,7 +463,11 @@ export function TransactionAnalyticsDashboard() {
             <code className="rounded bg-slate-200/80 px-1 py-0.5 text-xs dark:bg-slate-800">
               {portalUser?.domain}
             </code>{" "}
-            (from your return URL domain). Approved and rejected only—not pending or flagged.
+            (from your return URL domain). Accepted totals, net flow, and charts use amounts{" "}
+            <strong className="font-medium text-slate-700 dark:text-slate-300">
+              after 1% platform fee
+            </strong>{" "}
+            (99% of gross). Rejected totals show gross amounts.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -453,72 +509,109 @@ export function TransactionAnalyticsDashboard() {
         </div>
       ) : (
         <>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile
-          title="Deposits"
-          count={summary?.deposits?.count ?? 0}
-          amount={summary?.deposits?.totalAmount ?? 0}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatusKpiTile
+          title="Deposits accepted"
+          count={depositsAccepted.count}
+          amount={depositsAccepted.totalAmount}
           icon={ArrowDownLeft}
-          variant="in"
+          flow="deposit"
+          status="accepted"
           description={periodLabel}
         />
-        <KpiTile
-          title="Withdrawals"
-          count={summary?.withdrawals?.count ?? 0}
-          amount={summary?.withdrawals?.totalAmount ?? 0}
+        <StatusKpiTile
+          title="Deposits rejected"
+          count={depositsRejected.count}
+          amount={depositsRejected.totalAmount}
+          icon={ArrowDownLeft}
+          flow="deposit"
+          status="rejected"
+          description={periodLabel}
+        />
+        <StatusKpiTile
+          title="Withdrawals accepted"
+          count={withdrawalsAccepted.count}
+          amount={withdrawalsAccepted.totalAmount}
           icon={ArrowUpRight}
-          variant="out"
+          flow="withdrawal"
+          status="accepted"
           description={periodLabel}
         />
-        <Card className="border-slate-200/90 bg-white/90 shadow-md backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+        <StatusKpiTile
+          title="Withdrawals rejected"
+          count={withdrawalsRejected.count}
+          amount={withdrawalsRejected.totalAmount}
+          icon={ArrowUpRight}
+          flow="withdrawal"
+          status="rejected"
+          description={periodLabel}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card
+          className={cn(
+            "relative overflow-hidden border-0 text-white shadow-lg",
+            net >= 0
+              ? "bg-gradient-to-br from-teal-950 via-cyan-900 to-slate-900 shadow-teal-950/30"
+              : "bg-gradient-to-br from-orange-950 via-red-900 to-slate-900 shadow-orange-950/30"
+          )}
+        >
+          <div
+            className="pointer-events-none absolute -left-6 -bottom-10 h-36 w-36 rounded-full opacity-20 blur-2xl"
+            aria-hidden
+            style={{ background: net >= 0 ? "#2dd4bf" : "#fb923c" }}
+          />
+          <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-white/70">
               Net flow
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden />
+            <div className="rounded-lg bg-white/10 p-2 ring-1 ring-white/10">
+              <TrendingUp className="h-4 w-4 text-white/90" aria-hidden />
+            </div>
           </CardHeader>
-          <CardContent>
-            <p
-              className={cn(
-                "text-3xl font-bold tabular-nums sm:text-4xl",
-                net >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
-              )}
-            >
+          <CardContent className="relative pb-6">
+            <p className="text-3xl font-bold tabular-nums text-white sm:text-4xl">
               {net >= 0 ? "+" : ""}
               {tnd(net)}
             </p>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Deposits minus withdrawals for the selected window.
+            <p className="mt-2 text-xs text-white/55">
+              Accepted deposits minus accepted withdrawals, net of 1% fee (
+              {periodLabel.toLowerCase()}).
             </p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200/90 bg-gradient-to-br from-[#FF6D00]/12 via-white to-white shadow-md dark:border-slate-800 dark:from-[#FF6D00]/20 dark:via-slate-900 dark:to-slate-900">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-[#FF6D00] via-[#FF8533] to-amber-900 text-white shadow-lg shadow-orange-900/35">
+          <div
+            className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white opacity-15 blur-2xl"
+            aria-hidden
+          />
+          <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-white/80">
               Payment rails
             </CardTitle>
-            <Layers className="h-4 w-4 text-[#FF6D00]" aria-hidden />
+            <div className="rounded-lg bg-white/15 p-2 ring-1 ring-white/20">
+              <Layers className="h-4 w-4 text-white" aria-hidden />
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold tabular-nums text-slate-900 dark:text-white sm:text-4xl">
-              {activeRails}
-            </p>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Methods with activity in this period.
+          <CardContent className="relative pb-6">
+            <p className="text-3xl font-bold tabular-nums text-white sm:text-4xl">{activeRails}</p>
+            <p className="mt-2 text-xs text-white/70">
+              Methods with accepted activity in this period.
             </p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <Card className="border-slate-200/90 shadow-lg dark:border-slate-800 lg:col-span-2">
+        <Card className="relative overflow-hidden border-slate-200/90 bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 shadow-lg dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/20 lg:col-span-2">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <BarChart3 className="h-5 w-5 shrink-0 text-slate-500" aria-hidden />
+              <BarChart3 className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
               In vs out
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Share of total amount by request type.
+              Share of accepted volume: deposits vs withdrawals.
             </p>
           </CardHeader>
           <CardContent className="px-2 pb-4 pt-0 sm:px-6 sm:pb-6">
@@ -527,8 +620,8 @@ export function TransactionAnalyticsDashboard() {
               id={`${chartId}-donut`}
             >
               <p className="sr-only">
-                Deposits total {tnd(summary?.deposits?.totalAmount ?? 0)}, withdrawals total{" "}
-                {tnd(summary?.withdrawals?.totalAmount ?? 0)}.
+                Accepted deposits {tnd(depositsAccepted.totalAmount)}, accepted withdrawals{" "}
+                {tnd(withdrawalsAccepted.totalAmount)}.
               </p>
               <div className="h-[200px] w-full min-h-[200px] sm:h-[240px] sm:min-h-[240px] lg:h-[260px] lg:min-h-[260px]">
                 <Doughnut key={`donut-${isNarrow}-${days}`} data={doughnutData} options={doughnutOptions} aria-hidden />
@@ -537,16 +630,16 @@ export function TransactionAnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="min-w-0 border-slate-200/90 shadow-lg dark:border-slate-800 lg:col-span-3">
+        <Card className="relative min-w-0 overflow-hidden border-slate-200/90 bg-gradient-to-br from-slate-50 via-white to-violet-50/30 shadow-lg dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/20 lg:col-span-3">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <CreditCard className="h-5 w-5 shrink-0 text-slate-500" aria-hidden />
+              <CreditCard className="h-5 w-5 shrink-0 text-violet-600 dark:text-violet-400" aria-hidden />
               Volume by method
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               {isNarrow
                 ? "Horizontal bars: deposit vs withdrawal for each payment method."
-                : "Grouped bars: deposit and withdrawal totals per rail."}
+                : "Grouped bars: accepted deposit and withdrawal totals per rail."}
             </p>
           </CardHeader>
           <CardContent className="px-0 pb-4 pt-0 sm:px-6 sm:pb-6">
@@ -592,7 +685,7 @@ export function TransactionAnalyticsDashboard() {
         )}
       </div>
 
-      <Card className="border-slate-200/90 shadow-lg dark:border-slate-800">
+      <Card className="border-slate-200/90 bg-gradient-to-b from-white to-slate-50/80 shadow-lg dark:border-slate-800 dark:from-slate-900 dark:to-slate-950/80">
         <CardHeader>
           <CardTitle className="text-lg">Recent activity</CardTitle>
           <p className="text-sm text-muted-foreground">
