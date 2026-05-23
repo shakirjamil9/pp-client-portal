@@ -4,15 +4,17 @@ import Link from "next/link"
 import { LogIn, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePortalAuth } from "@/components/providers/portal-auth-provider"
+import { portalMerchantLabel } from "@/lib/portal-api"
 
 export function PortalSidebarAuthFooter() {
   const { user, logout } = usePortalAuth()
 
   if (user) {
+    const label = portalMerchantLabel(user)
     return (
       <div className="border-t border-white/10 p-4">
-        <p className="mb-2 truncate px-1 text-xs text-slate-400" title={user.domain}>
-          <span className="font-mono text-slate-300">{user.domain}</span>
+        <p className="mb-2 truncate px-1 text-xs text-slate-400" title={label}>
+          <span className="font-mono text-slate-300">{label}</span>
         </p>
         <Button
           type="button"

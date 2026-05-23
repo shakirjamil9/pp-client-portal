@@ -741,7 +741,10 @@ export function TransactionAnalyticsDashboard() {
       )}
 
       <p className="text-center text-xs text-slate-500 dark:text-slate-500">
-        Signed in as <span className="font-mono">{portalUser?.domain}</span>
+        Signed in as{" "}
+        <span className="font-mono">
+          {portalUser?.merchant_id || portalUser?.merchant_url}
+        </span>
       </p>
     </div>
   )
