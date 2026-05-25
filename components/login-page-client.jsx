@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { usePortalAuth } from "@/components/providers/portal-auth-provider"
+import { buildPortalLoginBody } from "@/lib/portal-api"
 
 export function LoginPageClient() {
   const router = useRouter()
@@ -29,7 +30,7 @@ export function LoginPageClient() {
     setError("")
     setSubmitting(true)
     try {
-      await login({ domain: identifier.trim(), password })
+      await login(buildPortalLoginBody(identifier.trim(), password))
       router.replace("/")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed")
