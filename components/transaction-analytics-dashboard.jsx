@@ -276,7 +276,7 @@ export function TransactionAnalyticsDashboard() {
   const withdrawalsApproved = summary?.withdrawals?.approved ?? { count: 0, totalAmount: 0 }
   const withdrawalsRejected = summary?.withdrawals?.rejected ?? { count: 0, totalAmount: 0 }
 
-  const net = depositsApproved.totalAmount - withdrawalsApproved.totalAmount
+  const net = analytics?.netFlow ?? depositsApproved.totalAmount - withdrawalsApproved.totalAmount
 
   const barData = useMemo(
     () => ({
